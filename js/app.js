@@ -1013,7 +1013,7 @@ const Auth = {
     const btn = document.getElementById('mockScanBtn');
     if (btn) { btn.disabled = true; btn.textContent = '已扫码...'; }
     try {
-      await fetch('http://localhost:3000/api/wx/mock/scan', {
+      await fetch('https://wrinkle-conceal-lifting.ngrok-free.dev/api/wx/mock/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticket: this._wxTicket })
@@ -1046,7 +1046,7 @@ const Auth = {
 
     try {
       // 调用后端获取二维码
-      const res = await fetch('http://localhost:3000/api/wx/qr');
+      const res = await fetch('https://wrinkle-conceal-lifting.ngrok-free.dev/api/wx/qr');
       const data = await res.json();
 
       // 显示二维码图片
@@ -1076,7 +1076,7 @@ const Auth = {
         // WebSocket 失败时降级轮询
         this._wxPollInterval = setInterval(async () => {
           try {
-            const r = await fetch('http://localhost:3000/api/wx/status/' + this._wxTicket);
+            const r = await fetch('https://wrinkle-conceal-lifting.ngrok-free.dev/api/wx/status/' + this._wxTicket);
             const d = await r.json();
             if (d.status === 'scanned') this._onWechatScan(d.user);
             else if (d.status === 'confirmed') { clearInterval(this._wxPollInterval); this.confirmWechat(); }
