@@ -288,27 +288,44 @@ const App = {
   },
 
   // Community
-  renderPosts() {
+  async renderPosts() {
     const feed = document.getElementById('postsFeed');
-    feed.innerHTML = POSTS_DATA.map(p => `
-      <div class="post-card" data-id="${p.id}">
+    let posts = POSTS_DATA;
+    try {
+      const r = await fetch('https://wrinkle-conceal-lifting.ngrok-free.dev/api/community/posts');
+      const data = await r.json();
+      if (data.posts && data.posts.length > 0) posts = data.posts;
+    } catch (e) {}
+    feed.innerHTML = posts.map(p => {
+      const timeStr = typeof p.time === 'number' ? App.timeAgo(p.time) : (p.time || '刚刚');
+      const liked = p.likedBy && App.currentUser && p.likedBy.includes(App.currentUser.name);
+      return `      <div class="post-card" data-id="${p.id}">
         <div class="post-author">
           <div class="post-avatar">${p.avatar}</div>
           <div>
-            <div class="post-author-name">${p.name}</div>
+            <div class="post-author-name">${p.author || p.name}</div>
             <div class="post-author-tag">${p.tag}</div>
           </div>
-          <div class="post-time">${p.time}</div>
+          <div class="post-time">${timeStr}</div>
         </div>
         <div class="post-content">${p.content}</div>
-        <div class="post-tags">${p.tags.map(t => `<span class="post-tag">#${t}</span>`).join('')}</div>
+        <div class="post-tags">${(p.tags||[]).map(t => `<span class="post-tag">#${t}</span>`).join('')}</div>
         <div class="post-actions">
-          <div class="post-action ${p.liked?'liked':''}" data-action="like"><span>${p.liked?'❤️':'🤍'}</span><span class="action-count">${p.likes}</span></div>
-          <div class="post-action" data-action="comment"><span>💬</span><span>${p.comments}</span></div>
+          <div class="post-action ${liked?'liked':''}" data-action="like"><span>${liked?'❤️':'🤍'}</span><span>${p.likes||0}</span></div>
+          <div class="post-action" data-action="comment">💬</div>
           <div class="post-action" data-action="bookmark">🔖</div>
           <div class="post-action" data-action="share">↗</div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+  },
+
+  timeAgo(ts) {
+    const diff = Date.now() - ts;
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+    if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+    return Math.floor(diff/86400000) + '天前';
   },
 
   renderHotTopics() {
@@ -872,18 +889,24 @@ const Community = {
     const content = document.getElementById('postTextarea').value.trim();
     if (!content) { Toast.show('请输入内容！', '!'); return; }
     if (!App.currentUser) { Toast.show('请先登录', 'L'); document.getElementById('postTextarea').value = ''; return; }
-    const newPost = {
-      id: Date.now(),
-      avatar: App.currentUser.name[0],
-      name: App.currentUser.name,
-      tag: '新学员',
-      time: '刚刚',
-      content: content,
-      tags: ['学习打卡'],
-      likes: 0, comments: 0, liked: false
-    };
-    POSTS_DATA.unshift(newPost);
-    App.renderPosts();
+    fetch('https://wrinkle-conceal-lifting.ngrok-free.dev/api/community/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        author: App.currentUser.name,
+        avatar: App.currentUser.name[0],
+        tag: '新学员',
+        content: content,
+        tags: ['学习打卡']
+      })
+    }).then(r => r.json()).then(() => {
+      App.renderPosts();
+    }).catch(() => {
+      // 降级：本地显示
+      const newPost = { id: Date.now(), author: App.currentUser.name, avatar: App.currentUser.name[0], tag: '新学员', time: Date.now(), content: content, tags: ['学习打卡'], likes: 0, likedBy: [] };
+      POSTS_DATA.unshift(newPost);
+      App.renderPosts();
+    });
     document.getElementById('postTextarea').value = '';
     Toast.show('发布成功！', 'OK');
   },
