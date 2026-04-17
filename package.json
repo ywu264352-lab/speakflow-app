@@ -1,0 +1,19 @@
+{
+  "name": "speakflow-app",
+  "version": "1.0.0",
+  "description": "SpeakFlow 英语学习网站 - 完整版",
+  "main": "speakflow-server/server.js",
+  "scripts": {
+    "start": "node speakflow-server/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.16.0",
+    "uuid": "^9.0.0",
+    "cors": "^2.8.5",
+    "localtunnel": "^2.0.2"
+  }
+}
